@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PWA Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin-top: 50px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>PWA Example</h1>
+  <p>Status: <span id="status">Online</span></p>
+
+  <button onclick="sendData()">Send Data</button>
+
+  <script>
+    // Update online/offline status
+    function updateStatus() {
+      document.getElementById("status").innerText =
+        navigator.onLine ? "Online" : "Offline";
+    }
+
+    window.addEventListener("online", updateStatus);
+    window.addEventListener("offline", updateStatus);
+    updateStatus();
+
+
+    // Send data (with sync fallback)
+    async function sendData() {
+      if (navigator.onLine) {
+        try {
+          await fetch("/api/sync-data", {
+            method: "POST",
+            body: JSON.stringify({ message: "Hello from online" }),
+            headers: { "Content-Type": "application/json" }
+          });
+          alert("Data sent successfully!");
+        } catch (err) {
+          alert("Failed!");
+        }
+      } else {
+        // Register background sync
+        const reg = await navigator.serviceWorker.ready;
+        await reg.sync.register("sync-data");
+
+        alert("Offline! Data will sync later.");
+      }
+    }
+
+
+    // Register Service Worker
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js")
+          .then(() => console.log("Service Worker Registered"))
+          .catch(err => console.log("SW failed:", err));
+      });
+    }
+  </script>
+
+</body>
+</html>
